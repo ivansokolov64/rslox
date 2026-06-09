@@ -1,14 +1,16 @@
 use std::fmt;
 use std::fmt::Formatter;
-use crate::token::{Literal, Token};
+use crate::token::Token;
+use crate::interpreter::LoxObject;
 
+#[derive(Debug, Clone)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>
     },
-    Literal(Option<Literal>),
+    Literal(Option<LoxObject>),
     Grouping(Box<Expr>),
     Unary {
         operator: Token,

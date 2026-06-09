@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use crate::interpreter::LoxObject;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {
@@ -50,41 +51,12 @@ pub enum TokenType {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Option<Literal>,
+    pub literal: Option<LoxObject>,
     pub line: usize
 }
 
-
-#[derive(Clone, Debug)]
-pub enum Literal {
-    Number(f64),
-    String(String),
-    Boolean(bool),
-    Nil
-}
-
-impl Display for Literal {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Literal::Number(n) => {
-                write!(f, "{n}")
-            }
-            Literal::String(s) => {
-                write!(f, "{s}")
-            }
-            Literal::Boolean(b) => {
-                write!(f, "{b}")
-            },
-            Literal::Nil => {
-                write!(f, "nil")
-            }
-        }
-    }
-}
-
-
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: Option<Literal>, line: usize) -> Token {
+    pub fn new(token_type: TokenType, lexeme: String, literal: Option<LoxObject>, line: usize) -> Token {
         Token {
             token_type,
             lexeme,

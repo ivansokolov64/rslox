@@ -2,11 +2,13 @@
 // Run a file or the REPL
 
 use std::io;
-use std::io::{BufReader, ErrorKind, Read, Write};
+use std::io::{BufReader, Read, Write};
 use crate::expr::Expr;
-use crate::parser::{ParseError, Parser};
+use crate::interpreter::{Evaluate, Interpreter};
+use crate::parser::Parser;
 use crate::scanner::Scanner;
-use crate::token::{Token, TokenType};
+use crate::token::Token;
+
 
 
 pub fn run_file(path: String) -> io::Result<()> {
@@ -40,51 +42,52 @@ pub fn run_prompt() -> io::Result<()> {
 
 fn run(source: String) -> io::Result<()> {
     let mut scanner = Scanner::new(source);
-    let tokens: Vec<Token> = scanner.scan_tokens();
+
+
+    let tokens: Vec<Token>;
+
+    match scanner.scan_tokens() {
+        Ok(scanned) => {
+            tokens = scanned;
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            return Ok(())
+        }
+    }
 
     let mut parser = Parser::new(tokens);
 
+    let expression: Expr;
+
     match parser.parse() {
         Ok(expr) => {
-          println!("{expr}");
-          Ok(())
+          expression = expr;
         },
         Err(e) => {
-            Err(io::Error::new(io::ErrorKind::Other, "Parsing error"))
+            eprintln!("{e}");
+            return Ok(())
         }
     }
 
+    let interpreter = Interpreter::new();
 
-}
-
-
-// Error types
-
-pub fn error(line: usize, message: &str) {
-    report(line, "runtime", message.to_string());
-}
-
-pub fn parse_error(error: &ParseError) {
-    match error {
-        ParseError::InvalidToken(t, m) => {
-            match t.token_type {
-                TokenType::EOF => report(t.line, " at end", m.to_string()),
-                _ => {
-                    let location = format!(" at '{}'", t.lexeme);
-                    report(t.line, &location, m.to_string())
+    match interpreter.interpret(expression) {
+        Ok(result) => {
+            match result {
+                None => {
+                    println!("none")
+                }
+                Some(obj) => {
+                    println!("{obj}")
                 }
             }
+
         }
-        ParseError::OutOfBounds(l) => {
-            report(l.clone(), "runtime", error.to_string())
-        }
-        ParseError::ExpectExpression(t) => {
-            report(t.line, "runtime", error.to_string())
+        Err(e) => {
+            eprintln!("{e}");
         }
     }
-}
 
-
-pub fn report(line: usize, loc: &str, message: String) {
-    eprintln!("[line {}] Error {}: '{}'", line, loc, message);
+    Ok(())
 }

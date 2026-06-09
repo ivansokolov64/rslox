@@ -1,35 +1,7 @@
-use std::error::Error;
-use std::fmt::{Display, Formatter};
+use crate::errors::{LoxError, ParseError};
 use crate::expr::Expr;
-use crate::lox;
-use crate::lox::error;
-use crate::token::{Literal, Token, TokenType};
-
-#[derive(Debug)]
-pub enum ParseError {
-    InvalidToken(Token, String),
-    OutOfBounds(usize),
-    ExpectExpression(Token)
-}
-
-impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ParseError::InvalidToken(t, m) => {
-                write!(f, "Unexpected token {t}: {m}")
-            }
-            ParseError::OutOfBounds(_) => {
-                write!(f, "Trying to access token beyond end of token vec.")
-            },
-            ParseError::ExpectExpression(_) => {
-                write!(f, "Expect expression.")
-            }
-
-        }
-    }
-}
-
-impl Error for ParseError {}
+use crate::token::{Token, TokenType};
+use crate::interpreter::LoxObject;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -44,22 +16,19 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, ParseError> {
+    pub fn parse(&mut self) -> Result<Expr, LoxError> {
 
         match self.expression() {
             Ok(expr) => {
-               Ok(expr)
+                Ok(expr)
             }
             Err(e) => {
-                lox::parse_error(&e);
-                Err(e)
+                Err(LoxError::ParseError(self.peek().cloned(), e))
             }
         }
-
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
-
         self.equality()
     }
 
@@ -172,20 +141,20 @@ impl Parser {
 
     fn primary(&mut self) -> Result<Expr, ParseError> {
         if self.match_tokens(&[TokenType::False])? {
-            return Ok(Expr::Literal(Some(Literal::Boolean(false))));
+            return Ok(Expr::Literal(Some(LoxObject::Boolean(false))));
         }
 
         if self.match_tokens(&[TokenType::True])? {
-            return Ok(Expr::Literal(Some(Literal::Boolean(true))));
+            return Ok(Expr::Literal(Some(LoxObject::Boolean(true))));
         }
 
         if self.match_tokens(&[TokenType::Nil])? {
-            return Ok(Expr::Literal(Some(Literal::Nil)));
+            return Ok(Expr::Literal(Some(LoxObject::Nil)));
         }
 
         if self.match_tokens(&[TokenType::Number, TokenType::String])? {
             let Some(token) = self.previous() else {
-                return Err(ParseError::OutOfBounds(self.current))
+                return Err(ParseError::OutOfBounds)
             };
             return Ok(Expr::Literal(token.literal.clone()));
         }
@@ -193,17 +162,17 @@ impl Parser {
         if self.match_tokens(&[TokenType::LeftParen])? {
             let expr = self.expression()?;
 
-            self.consume(TokenType::RightParen, "Expect ')' after expression.".to_string())?;
+            self.consume(TokenType::RightParen)?;
 
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
         match self.peek() {
             None => {
-                Err(ParseError::OutOfBounds(self.current))
+                Err(ParseError::OutOfBounds)
             }
-            Some(t) => {
-                Err(ParseError::ExpectExpression(t.clone()))
+            Some(_) => {
+                Err(ParseError::ExpectExpression)
             }
         }
 
@@ -218,7 +187,7 @@ impl Parser {
 
         while !self.is_at_end()? {
             let Some(token) = self.previous() else {
-                return Err(ParseError::OutOfBounds(self.current))
+                return Err(ParseError::OutOfBounds)
             };
 
             if let TokenType::Semicolon = token.token_type {
@@ -226,7 +195,7 @@ impl Parser {
             }
 
             let Some(token) = self.peek() else {
-                return Err(ParseError::OutOfBounds(self.current))
+                return Err(ParseError::OutOfBounds)
             };
 
             match token.token_type {
@@ -240,15 +209,15 @@ impl Parser {
         Ok(())
     }
 
-    fn consume(&mut self, token_type: TokenType, message: String) -> Result<Option<&Token>, ParseError> {
+    fn consume(&mut self, token_type: TokenType) -> Result<Option<&Token>, ParseError> {
         if self.check(&token_type)? {
             self.next()
         }
         else {
-            let Some(token) = self.peek() else {
-                return Err(ParseError::OutOfBounds(self.current))
+            let Some(_) = self.peek() else {
+                return Err(ParseError::OutOfBounds)
             };
-            Err(ParseError::InvalidToken(token.clone(), message))
+            Err(ParseError::InvalidToken)
         }
     }
 
@@ -288,7 +257,7 @@ impl Parser {
     fn is_at_end(&self) -> Result<bool, ParseError> {
         match self.peek() {
             None => {
-                Err(ParseError::OutOfBounds(self.current))
+                Err(ParseError::OutOfBounds)
             }
             Some(token) => {
                 match token.token_type {
