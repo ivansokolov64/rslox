@@ -15,6 +15,11 @@ pub enum Expr {
     Unary {
         operator: Token,
         right: Box<Expr>
+    },
+    Ternary {
+        if_expr: Box<Expr>,
+        then_branch: Box<Expr>,
+        else_branch: Box<Expr>
     }
 }
 
@@ -39,6 +44,9 @@ impl fmt::Display for Expr {
             }
             Expr::Unary { operator, right } => {
                 write!(f, "({} {})", operator.lexeme, right)
+            }
+            Expr::Ternary { if_expr, then_branch, else_branch } => {
+                write!(f, "(ternary {if_expr} {then_branch} {else_branch})")
             }
         }
     }

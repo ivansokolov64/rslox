@@ -29,7 +29,47 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {
-        self.equality()
+        self.comma()
+    }
+
+    fn comma(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.ternary()?;
+
+        while self.match_tokens(&[TokenType::Comma])? {
+            let operator = self.previous()
+                .expect("previous() should exist after match_tokens()")
+                .clone();
+
+            let right = self.ternary()?;
+
+            expr = Expr::Binary {
+                left: Box::from(expr),
+                operator,
+                right: Box::from(right)
+            }
+
+        }
+        Ok(expr)
+    }
+
+    fn ternary(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.equality()?;
+
+        if self.match_tokens(&[TokenType::Question])? {
+            let then_branch = self.equality()?;
+            self.consume(TokenType::Colon)?;
+            let else_branch = self.ternary()?;
+
+            expr = Expr::Ternary {
+                if_expr: Box::from(expr),
+                then_branch: Box::from(then_branch),
+                else_branch: Box::from(else_branch),
+            }
+
+        }
+        Ok(expr)
+
+
     }
 
     fn equality(&mut self) -> Result<Expr, ParseError> {
@@ -217,7 +257,7 @@ impl Parser {
             let Some(_) = self.peek() else {
                 return Err(ParseError::OutOfBounds)
             };
-            Err(ParseError::InvalidToken)
+            Err(ParseError::InvalidToken(token_type))
         }
     }
 

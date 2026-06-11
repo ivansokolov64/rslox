@@ -78,6 +78,8 @@ impl Scanner {
             '+' => self.add_without_literal(TokenType::Plus),
             ';' => self.add_without_literal(TokenType::Semicolon),
             '*' => self.add_without_literal(TokenType::Star),
+            '?' => self.add_without_literal(TokenType::Question),
+            ':' => self.add_without_literal(TokenType::Colon),
 
             // One or two characters
 
@@ -132,7 +134,7 @@ impl Scanner {
             '\n' => { self.line += 1; Ok(()) },
 
 
-            '0'..'9' => self.number(),
+            '0'..='9' => self.number(),
 
             c if c.is_alphabetic() => self.identifier(),
 

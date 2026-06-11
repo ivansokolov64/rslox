@@ -15,7 +15,7 @@ pub enum ScannerError {
 
 #[derive(Debug)]
 pub enum ParseError {
-    InvalidToken,
+    InvalidToken(TokenType),
     OutOfBounds,
     ExpectExpression
 }
@@ -66,8 +66,8 @@ impl Display for ScannerError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::InvalidToken => {
-                write!(f, "Encountered an invalid token")
+            ParseError::InvalidToken(t) => {
+                write!(f, "Encountered an invalid token. Expected: {:?}", t)
             },
             ParseError::OutOfBounds => {
                 write!(f, "Attempting to read token which is out of bounds")

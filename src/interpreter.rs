@@ -191,6 +191,24 @@ impl Evaluate<Option<LoxObject>> for Expr {
                 }
 
             }
+            Expr::Ternary { if_expr, then_branch, else_branch } => {
+                let Some(cond) = if_expr.evaluate()? else {
+                    return Ok(None)
+                };
+
+                let result = bool::try_from(cond)
+                    .map_err(|e| LoxError::RuntimeError(Token::new(TokenType::Question, "".to_string(), None, 0), e))?;
+
+                if result {
+                    then_branch.evaluate()
+                }
+                else {
+                    else_branch.evaluate()
+                }
+
+
+
+            }
         }
     }
 }
