@@ -2,6 +2,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::{Not};
 use crate::errors::{LoxError, RuntimeError};
 use crate::expr::Expr;
+use crate::stmt::Stmt;
 use crate::token::{Token, TokenType};
 
 
@@ -94,8 +95,11 @@ impl Interpreter {
     pub fn new() -> Self {
         Self { }
     }
-    pub fn interpret(&self, expr: Expr) -> Result<Option<LoxObject>, LoxError> {
-        expr.evaluate()
+    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), LoxError> {
+        for statement in statements {
+            statement.execute()?;
+        }
+        Ok(())
     }
 }
 
@@ -140,7 +144,13 @@ impl Evaluate<Option<LoxObject>> for Expr {
                     },
                     TokenType::Slash => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Number(a / b)))
+
+                        // Add division by zero error
+                        match b {
+                            0f64 => Err(LoxError::RuntimeError(operator.clone(), RuntimeError::DivisionByZero)),
+                            _ => Ok(Some(LoxObject::Number(a / b)))
+                        }
+
                     },
                     TokenType::Star => {
                         let (a, b) = numeric_operands(operator, l, r)?;

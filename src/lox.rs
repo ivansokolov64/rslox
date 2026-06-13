@@ -3,15 +3,15 @@
 
 use std::io;
 use std::io::{BufReader, Read, Write};
-use crate::expr::Expr;
-use crate::interpreter::{Evaluate, Interpreter};
+use crate::errors::LoxError;
+use crate::interpreter::Interpreter;
 use crate::parser::Parser;
 use crate::scanner::Scanner;
 use crate::token::Token;
 
 
 
-pub fn run_file(path: String) -> io::Result<()> {
+pub fn run_file(path: String) -> Result<(), LoxError>  {
 
     let file = std::fs::File::open(path)?;
     let mut reader = BufReader::new(file);
@@ -20,9 +20,10 @@ pub fn run_file(path: String) -> io::Result<()> {
     reader.read_to_string(&mut buf)?;
 
     run(buf)
+
 }
 
-pub fn run_prompt() -> io::Result<()> {
+pub fn run_prompt() -> Result<(), LoxError> {
     let mut buf = String::new();
 
     loop {
@@ -31,7 +32,7 @@ pub fn run_prompt() -> io::Result<()> {
 
         buf.clear();
         io::stdin().read_line(&mut buf)?;
-        run(buf.clone())?;
+        let _ = run(buf.clone());
     }
 
 }
@@ -40,7 +41,7 @@ pub fn run_prompt() -> io::Result<()> {
 // Execute a line of source code
 // For now, just print the tokens
 
-fn run(source: String) -> io::Result<()> {
+fn run(source: String) -> Result<(), LoxError> {
     let mut scanner = Scanner::new(source);
 
 
@@ -52,42 +53,32 @@ fn run(source: String) -> io::Result<()> {
         }
         Err(e) => {
             eprintln!("{e}");
-            return Ok(())
+            return Err(e)
         }
     }
 
     let mut parser = Parser::new(tokens);
 
-    let expression: Expr;
-
-    match parser.parse() {
-        Ok(expr) => {
-          expression = expr;
-        },
+    let statements = match parser.parse() {
+        Ok(statements) => statements,
         Err(e) => {
             eprintln!("{e}");
-            return Ok(())
+            return Err(e);
         }
-    }
+    };
 
     let interpreter = Interpreter::new();
 
-    match interpreter.interpret(expression) {
-        Ok(result) => {
-            match result {
-                None => {
-                    println!("none")
-                }
-                Some(obj) => {
-                    println!("{obj}")
-                }
-            }
-
-        }
+    match interpreter.interpret(statements) {
+        Ok(_) => {
+            Ok(())
+        },
         Err(e) => {
             eprintln!("{e}");
+            Err(e)
         }
+
     }
 
-    Ok(())
+
 }

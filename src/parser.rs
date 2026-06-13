@@ -2,6 +2,7 @@ use crate::errors::{LoxError, ParseError};
 use crate::expr::Expr;
 use crate::token::{Token, TokenType};
 use crate::interpreter::LoxObject;
+use crate::stmt::Stmt;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -16,16 +17,57 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, LoxError> {
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, LoxError> {
 
-        match self.expression() {
-            Ok(expr) => {
-                Ok(expr)
+        let mut statements: Vec<Stmt> = Vec::new();
+
+
+        // FIX THIS
+        loop {
+            match self.is_at_end() {
+                Ok(v) => {
+                    if v {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    return Err(LoxError::ParseError(self.peek().cloned(), e))
+                }
             }
-            Err(e) => {
-                Err(LoxError::ParseError(self.peek().cloned(), e))
+
+            match self.statement() {
+                Ok(next) => {
+                    statements.push(next);
+                }
+                Err(e) => {
+                    return Err(LoxError::ParseError(self.peek().cloned(), e))
+                }
             }
+
         }
+        Ok(statements)
+    }
+
+    fn statement(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[TokenType::Print])? {
+            self.print_statement()
+        }
+        else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, ParseError> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon)?;
+        Ok(Stmt::Print(value))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, ParseError> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon)?;
+
+        Ok(Stmt::Expression(expr))
     }
 
     fn expression(&mut self) -> Result<Expr, ParseError> {

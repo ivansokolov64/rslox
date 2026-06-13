@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt;
+use std::{fmt, io};
 use std::fmt::{Display, Formatter};
 use crate::expr::Expr;
 use crate::interpreter::{LoxObject, LoxType};
@@ -28,7 +28,8 @@ pub enum RuntimeError {
     },
     EvaluationError(Expr),
     NonTruthyValue(LoxObject),
-    NoneEval
+    NoneEval,
+    DivisionByZero
 }
 
 
@@ -37,7 +38,14 @@ pub enum RuntimeError {
 pub enum LoxError {
     ParseError(Option<Token>, ParseError),
     ScannerError(usize, ScannerError),
-    RuntimeError(Token, RuntimeError)
+    RuntimeError(Token, RuntimeError),
+    IoError(io::Error)
+}
+
+impl From<io::Error> for LoxError {
+    fn from(e: io::Error) -> Self {
+        LoxError::IoError(e)
+    }
 }
 
 
@@ -95,6 +103,9 @@ impl Display for RuntimeError {
             RuntimeError::NoneEval => {
                 write!(f, "Expression evaluates to None")
             }
+            RuntimeError::DivisionByZero => {
+                write!(f, "Division by zero")
+            }
         }
     }
 }
@@ -128,6 +139,9 @@ impl Display for LoxError {
                     TokenType::EOF => write!(f,  "at end: ")?,
                     _ => write!(f, "at {}: ", token.lexeme)?
                 }
+                write!(f, "'{e}'")
+            }
+            LoxError::IoError(e) => {
                 write!(f, "'{e}'")
             }
         }
