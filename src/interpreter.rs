@@ -114,6 +114,9 @@ impl Evaluate<Option<LoxObject>> for Expr {
                 };
 
                 match operator.token_type {
+                    TokenType::Comma => {
+                        Ok(Some(r))
+                    },
                     TokenType::Greater => {
                         let (a, b) = numeric_operands(operator, l, r)?;
                         Ok(Some(LoxObject::Boolean(a > b)))
@@ -191,13 +194,13 @@ impl Evaluate<Option<LoxObject>> for Expr {
                 }
 
             }
-            Expr::Ternary { if_expr, then_branch, else_branch } => {
+            Expr::Ternary { if_expr, then_branch, else_branch, operator } => {
                 let Some(cond) = if_expr.evaluate()? else {
                     return Ok(None)
                 };
 
                 let result = bool::try_from(cond)
-                    .map_err(|e| LoxError::RuntimeError(Token::new(TokenType::Question, "".to_string(), None, 0), e))?;
+                    .map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
 
                 if result {
                     then_branch.evaluate()

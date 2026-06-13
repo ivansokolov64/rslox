@@ -56,6 +56,9 @@ impl Parser {
         let mut expr = self.equality()?;
 
         if self.match_tokens(&[TokenType::Question])? {
+            let operator = self.previous()
+                .expect("previous() should exist after match_tokens()")
+                .clone();
             let then_branch = self.equality()?;
             self.consume(TokenType::Colon)?;
             let else_branch = self.ternary()?;
@@ -64,6 +67,8 @@ impl Parser {
                 if_expr: Box::from(expr),
                 then_branch: Box::from(then_branch),
                 else_branch: Box::from(else_branch),
+                operator
+
             }
 
         }
