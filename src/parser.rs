@@ -301,10 +301,10 @@ impl Parser {
             self.next()
         }
         else {
-            let Some(_) = self.peek() else {
+            let Some(t) = self.peek() else {
                 return Err(ParseError::OutOfBounds)
             };
-            Err(ParseError::InvalidToken(token_type))
+            Err(ParseError::InvalidToken(token_type, t.token_type.clone()))
         }
     }
 

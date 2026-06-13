@@ -1,4 +1,0 @@
-print 5+5;
-print true ? 4 : 1;
-0;
-print "abc" + "123";
