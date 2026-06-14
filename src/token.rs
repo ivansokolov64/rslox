@@ -1,5 +1,5 @@
 use std::fmt::{Display, Formatter};
-use crate::interpreter::LoxObject;
+use crate::loxobject::LoxObject;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {

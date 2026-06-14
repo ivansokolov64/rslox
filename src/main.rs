@@ -6,6 +6,7 @@ pub mod parser;
 pub mod interpreter;
 pub mod errors;
 pub mod stmt;
+pub mod loxobject;
 
 use std::process::ExitCode;
 use crate::errors::LoxError;

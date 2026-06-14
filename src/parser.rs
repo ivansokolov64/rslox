@@ -1,7 +1,7 @@
 use crate::errors::{LoxError, ParseError};
 use crate::expr::Expr;
 use crate::token::{Token, TokenType};
-use crate::interpreter::LoxObject;
+use crate::loxobject::LoxObject;
 use crate::stmt::Stmt;
 
 pub struct Parser {
@@ -21,8 +21,6 @@ impl Parser {
 
         let mut statements: Vec<Stmt> = Vec::new();
 
-
-        // FIX THIS
         loop {
             match self.is_at_end() {
                 Ok(v) => {
@@ -35,17 +33,45 @@ impl Parser {
                 }
             }
 
-            match self.statement() {
+            match self.declaration() {
                 Ok(next) => {
                     statements.push(next);
                 }
-                Err(e) => {
-                    return Err(LoxError::ParseError(self.peek().cloned(), e))
+                Err(_) => {
+                    self.synchronize().map_err(|e| LoxError::ParseError(None, e))?;
                 }
             }
 
         }
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, ParseError> {
+        if self.match_tokens(&[TokenType::Var])? {
+            self.var_declaration()
+        }
+        else {
+            self.statement()
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
+
+        let name = match self.consume(TokenType::Identifier)? {
+            Some(token) => token.clone(),
+            None => return Err(ParseError::ExpectExpression),
+        };
+
+        let mut initializer: Option<Expr> = None;
+
+        let has_initializer = self.match_tokens(&[TokenType::Equal])?;
+        if has_initializer {
+            initializer = Some(self.expression()?);
+        }
+
+        self.consume(TokenType::Semicolon)?;
+
+        Ok(Stmt::Var(name, initializer))
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
@@ -254,6 +280,15 @@ impl Parser {
             return Ok(Expr::Grouping(Box::new(expr)));
         }
 
+        if self.match_tokens(&[TokenType::Identifier])? {
+
+            let Some(token) = self.previous() else {
+                return Err(ParseError::OutOfBounds)
+            };
+
+            return Ok(Expr::Variable(token.clone()));
+        }
+
         match self.peek() {
             None => {
                 Err(ParseError::OutOfBounds)
@@ -274,7 +309,7 @@ impl Parser {
 
         while !self.is_at_end()? {
             let Some(token) = self.previous() else {
-                return Err(ParseError::OutOfBounds)
+                return Err(ParseError::OutOfBounds);
             };
 
             if let TokenType::Semicolon = token.token_type {

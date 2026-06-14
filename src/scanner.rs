@@ -1,6 +1,6 @@
 use crate::errors::{LoxError, ScannerError};
 use crate::token::{Token, TokenType};
-use crate::interpreter::LoxObject;
+use crate::loxobject::LoxObject;
 
 
 fn keyword(s: &str) -> Option<TokenType> {

@@ -2,7 +2,7 @@ use std::error::Error;
 use std::{fmt, io};
 use std::fmt::{Display, Formatter};
 use crate::expr::Expr;
-use crate::interpreter::{LoxObject, LoxType};
+use crate::loxobject::{LoxObject, LoxType};
 use crate::token::{Token, TokenType};
 
 
@@ -29,7 +29,8 @@ pub enum RuntimeError {
     EvaluationError(Expr),
     NonTruthyValue(LoxObject),
     NoneEval,
-    DivisionByZero
+    DivisionByZero,
+    UndefinedVariable(String),
 }
 
 
@@ -105,6 +106,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::DivisionByZero => {
                 write!(f, "Division by zero")
+            }
+            RuntimeError::UndefinedVariable(name) => {
+                write!(f, "Undefined variable {name}")
             }
         }
     }

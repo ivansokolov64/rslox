@@ -13,18 +13,20 @@ use crate::token::Token;
 
 pub fn run_file(path: String) -> Result<(), LoxError>  {
 
+    let mut interpreter = Interpreter::new();
     let file = std::fs::File::open(path)?;
     let mut reader = BufReader::new(file);
 
     let mut buf = String::new();
     reader.read_to_string(&mut buf)?;
 
-    run(buf)
+    run(buf, &mut interpreter)
 
 }
 
 pub fn run_prompt() -> Result<(), LoxError> {
     let mut buf = String::new();
+    let mut interpreter = Interpreter::new();
 
     loop {
         print!("> ");
@@ -32,7 +34,7 @@ pub fn run_prompt() -> Result<(), LoxError> {
 
         buf.clear();
         io::stdin().read_line(&mut buf)?;
-        let _ = run(buf.clone());
+        let _ = run(buf.clone(), &mut interpreter);
     }
 
 }
@@ -41,7 +43,7 @@ pub fn run_prompt() -> Result<(), LoxError> {
 // Execute a line of source code
 // For now, just print the tokens
 
-fn run(source: String) -> Result<(), LoxError> {
+fn run(source: String, interpreter: &mut Interpreter) -> Result<(), LoxError> {
     let mut scanner = Scanner::new(source);
 
 
@@ -66,8 +68,6 @@ fn run(source: String) -> Result<(), LoxError> {
             return Err(e);
         }
     };
-
-    let interpreter = Interpreter::new();
 
     match interpreter.interpret(statements) {
         Ok(_) => {
