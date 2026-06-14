@@ -34,19 +34,30 @@ impl Environment {
             values: HashMap::new()
         }
     }
-    pub fn define(&mut self, name: String, value: LoxObject) {
-        self.values.insert(name, value);
+    pub fn define(&mut self, name: &String, value: LoxObject) -> Result<(), LoxError> {
+        self.values.insert(name.to_string(), value);
+        Ok(())
     }
 
-    pub fn get(&mut self, name: &Token) -> Result<Option<LoxObject>, LoxError> {
+    pub fn get(&mut self, name: &Token) -> Result<LoxObject, LoxError> {
         match self.values.get(&name.lexeme) {
             None => {
                 Err(LoxError::RuntimeError(name.clone(),
                                            RuntimeError::UndefinedVariable(name.lexeme.to_string())))
             }
             Some(obj) => {
-                Ok(Some(obj.to_owned()))
+                Ok(obj.to_owned())
             }
+        }
+    }
+
+    pub fn assign(&mut self, name: &Token, value: LoxObject) -> Result<(), LoxError> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.to_string(), value);
+            Ok(())
+        }
+        else {
+            Err(LoxError::RuntimeError(name.clone(), RuntimeError::UndefinedVariable(name.lexeme.to_string())))
         }
     }
 }

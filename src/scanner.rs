@@ -54,7 +54,7 @@ impl Scanner {
             self.scan_token()?;
         }
 
-        self.tokens.push(Token::new(TokenType::EOF, "".to_string(), None, self.line));
+        self.add_without_literal(TokenType::EOF)?;
 
         Ok(self.tokens.clone())
 
@@ -159,7 +159,7 @@ impl Scanner {
 
         let value: String = self.source[self.start + 1 .. self.current - 1].to_string();
 
-        self.add_token(TokenType::String, Some(LoxObject::String(value)))
+        self.add_token(TokenType::String, LoxObject::String(value))
 
     }
 
@@ -177,7 +177,7 @@ impl Scanner {
         }
 
         match self.source[self.start..self.current].parse::<f64>() {
-            Ok(number) => self.add_token(TokenType::Number, Some(LoxObject::Number(number))),
+            Ok(number) => self.add_token(TokenType::Number, LoxObject::Number(number)),
             Err(_) => {
                 Err(LoxError::ScannerError(self.line, ScannerError::InvalidNumber))
             }
@@ -209,10 +209,10 @@ impl Scanner {
 
     fn add_without_literal(&mut self, token_type: TokenType)
         -> Result<(), LoxError>{
-        self.add_token(token_type, None)
+        self.add_token(token_type, LoxObject::Nil)
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: Option<LoxObject>) -> Result<(), LoxError> {
+    fn add_token(&mut self, token_type: TokenType, literal: LoxObject) -> Result<(), LoxError> {
         let text: String = self.source[self.start..self.current].to_string();
         self.tokens.push(Token::new(token_type, text, literal, self.line));
         Ok(())

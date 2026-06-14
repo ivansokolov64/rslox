@@ -7,12 +7,16 @@ use crate::loxobject::LoxObject;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Assign {
+        name: Token,
+        value: Box<Expr>
+    },
     Binary {
         left: Box<Expr>,
         operator: Token,
         right: Box<Expr>
     },
-    Literal(Option<LoxObject>),
+    Literal(LoxObject),
     Grouping(Box<Expr>),
     Unary {
         operator: Token,
@@ -34,14 +38,7 @@ impl fmt::Display for Expr {
                 write!(f, "({} {} {})", operator.lexeme, left, right)
             }
             Expr::Literal(literal) => {
-                match literal {
-                    None => {
-                        write!(f, "nil")
-                    }
-                    Some(lit) => {
-                        write!(f, "{lit}")
-                    }
-                }
+                write!(f, "{literal}")
             }
             Expr::Grouping(expr) => {
                 write!(f, "(group {expr})")
@@ -55,43 +52,44 @@ impl fmt::Display for Expr {
             Expr::Variable(token) => {
                 write!(f, "(variable {token}")
             }
+            Expr::Assign { name, value } => {
+                write!(f, "(assign {name} {value})")
+            }
         }
     }
 }
 
 impl Expr {
-    pub(crate) fn evaluate(&self, environment: &mut Environment) -> Result<Option<LoxObject>, LoxError> {
+    pub(crate) fn evaluate(&self, environment: &mut Environment) -> Result<LoxObject, LoxError> {
         match self {
             Expr::Binary {left, operator, right} => {
 
-                let (Some(l), Some(r)) = (left.evaluate(environment)?, right.evaluate(environment)?) else {
-                    return Err(LoxError::RuntimeError(operator.clone(), RuntimeError::EvaluationError(*left.clone())));
-                };
+                let (l, r) = (left.evaluate(environment)?, right.evaluate(environment)?);
 
                 match operator.token_type {
                     TokenType::Comma => {
-                        Ok(Some(r))
+                        Ok(r)
                     },
                     TokenType::Greater => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Boolean(a > b)))
+                        Ok(LoxObject::Boolean(a > b))
 
                     },
                     TokenType::GreaterEqual => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Boolean(a >= b)))
+                        Ok(LoxObject::Boolean(a >= b))
                     },
                     TokenType::Less => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Boolean(a < b)))
+                        Ok(LoxObject::Boolean(a < b))
                     },
                     TokenType::LessEqual => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Boolean(a <= b)))
+                        Ok(LoxObject::Boolean(a <= b))
                     },
                     TokenType::Minus => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Number(a - b)))
+                        Ok(LoxObject::Number(a - b))
                     },
                     TokenType::Slash => {
                         let (a, b) = numeric_operands(operator, l, r)?;
@@ -99,27 +97,27 @@ impl Expr {
                         // Add division by zero error
                         match b {
                             0f64 => Err(LoxError::RuntimeError(operator.clone(), RuntimeError::DivisionByZero)),
-                            _ => Ok(Some(LoxObject::Number(a / b)))
+                            _ => Ok(LoxObject::Number(a / b))
                         }
 
                     },
                     TokenType::Star => {
                         let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(Some(LoxObject::Number(a * b)))
+                        Ok(LoxObject::Number(a * b))
                     },
                     TokenType::Plus => {
                         if let LoxObject::String(str_l) = &l
                             && let LoxObject::String(str_r) = &r {
-                            Ok(Some(LoxObject::String(format!("{}{}", str_l, str_r))))
+                            Ok(LoxObject::String(format!("{}{}", str_l, str_r)))
                         }
                         else {
                             let (a, b) = numeric_operands(operator, l, r)?;
-                            Ok(Some(LoxObject::Number(a + b)))
+                            Ok(LoxObject::Number(a + b))
                         }
                     },
-                    TokenType::BangEqual => Ok(Some(LoxObject::Boolean(l != r))),
-                    TokenType::EqualEqual => Ok(Some(LoxObject::Boolean(l == r))),
-                    _ => Ok(None)
+                    TokenType::BangEqual => Ok(LoxObject::Boolean(l != r)),
+                    TokenType::EqualEqual => Ok(LoxObject::Boolean(l == r)),
+                    _ => Ok(LoxObject::Nil)
                 }
 
             }
@@ -130,16 +128,14 @@ impl Expr {
                 expr.evaluate(environment)
             }
             Expr::Unary {operator, right } => {
-                let Some(r) = right.evaluate(environment)? else {
-                    return Ok(None)
-                };
+                let r = right.evaluate(environment)?;
 
                 match operator.token_type {
                     TokenType::Minus => {
 
                         match f64::try_from(r) {
                             Ok(n) => {
-                                Ok(Some(LoxObject::Number(-n)))
+                                Ok(LoxObject::Number(-n))
                             }
                             Err(e) => {
                                 Err(LoxError::RuntimeError(operator.clone(), e))
@@ -151,14 +147,12 @@ impl Expr {
                         let res = (!r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
                         Ok(res)
                     }
-                    _ => Ok(None)
+                    _ => Ok(LoxObject::Nil)
                 }
 
             }
             Expr::Ternary { if_expr, then_branch, else_branch, operator } => {
-                let Some(cond) = if_expr.evaluate(environment)? else {
-                    return Ok(None)
-                };
+                let cond = if_expr.evaluate(environment)?;
 
                 let result = bool::try_from(cond)
                     .map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
@@ -173,6 +167,11 @@ impl Expr {
             }
             Expr::Variable(token) => {
                 environment.get(token)
+            }
+            Expr::Assign { name, value } => {
+                let value = value.evaluate(environment)?;
+                environment.assign(name, value.clone())?;
+                Ok(value)
             }
         }
     }

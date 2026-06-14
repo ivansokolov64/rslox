@@ -17,7 +17,8 @@ pub enum ScannerError {
 pub enum ParseError {
     InvalidToken(TokenType, TokenType),
     OutOfBounds,
-    ExpectExpression
+    ExpectExpression,
+    InvalidAssignmentTarget
 }
 
 #[derive(Debug)]
@@ -83,6 +84,9 @@ impl Display for ParseError {
             },
             ParseError::ExpectExpression => {
                 write!(f, "Expected an expression")
+            },
+            ParseError::InvalidAssignmentTarget => {
+                write!(f, "Invalid assignment target")
             }
 
         }

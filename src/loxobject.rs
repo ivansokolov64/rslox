@@ -19,11 +19,11 @@ pub enum LoxObject {
 }
 
 impl Not for LoxObject {
-    type Output = Result<Option<Self>, RuntimeError>;
+    type Output = Result<Self, RuntimeError>;
 
     fn not(self) -> Self::Output {
         let b = bool::try_from(self)?;
-        Ok(Some(LoxObject::Boolean(!b)))
+        Ok(LoxObject::Boolean(!b))
     }
 }
 

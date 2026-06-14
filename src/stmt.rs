@@ -20,36 +20,20 @@ impl Stmt {
             }
             Stmt::Print(expr) => {
                 let value = expr.evaluate(environment)?;
-                match value {
-                    None => {
-                        println!("none");
-                    }
-                    Some(v) => {
-                        println!("{}", v);
-                    }
-                }
+                println!("{}", value);
                 Ok(())
             }
             Stmt::Var(token, expression) => {
-                let value: LoxObject;
-                match expression {
+                let value: LoxObject = match expression {
                     None => {
-                        value = LoxObject::Nil;
+                        LoxObject::Nil
 
                     }
                     Some(expr) => {
-                        match expr.evaluate(environment)? {
-                            None => {
-                                value = LoxObject::Nil;
-                            }
-                            Some(v) => {
-                                value = v
-                            }
-                        }
+                        expr.evaluate(environment)?
                     }
-                }
-
-                environment.define(token.lexeme.to_string(), value);
+                };
+                environment.define(&token.lexeme, value)?;
                 Ok(())
 
 

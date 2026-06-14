@@ -37,8 +37,17 @@ impl Parser {
                 Ok(next) => {
                     statements.push(next);
                 }
-                Err(_) => {
-                    self.synchronize().map_err(|e| LoxError::ParseError(None, e))?;
+                Err(e) => {
+                    match &e {
+                        ParseError::InvalidToken(_, _) | ParseError::ExpectExpression => {
+                        self.synchronize().map_err(|e| LoxError::ParseError(None, e))?;
+                        }
+                        _ => {}
+                    }
+
+                    let err = LoxError::ParseError(self.previous().cloned(), e);
+                    eprintln!("{err}");
+
                 }
             }
 
@@ -101,14 +110,14 @@ impl Parser {
     }
 
     fn comma(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.ternary()?;
+        let mut expr = self.assignment()?;
 
         while self.match_tokens(&[TokenType::Comma])? {
             let operator = self.previous()
                 .expect("previous() should exist after match_tokens()")
                 .clone();
 
-            let right = self.ternary()?;
+            let right = self.assignment()?;
 
             expr = Expr::Binary {
                 left: Box::from(expr),
@@ -118,6 +127,28 @@ impl Parser {
 
         }
         Ok(expr)
+    }
+
+    fn assignment(&mut self) -> Result<Expr, ParseError> {
+        let expr = self.ternary()?;
+
+        if self.match_tokens(&[TokenType::Equal])? {
+
+            let value = self.assignment()?;
+
+            if let Expr::Variable(name) = expr {
+                return Ok(Expr::Assign {
+                    name,
+                    value: Box::from(value)
+                })
+            };
+
+            Err(ParseError::InvalidAssignmentTarget)
+        }
+        else {
+            Ok(expr)
+        }
+
     }
 
     fn ternary(&mut self) -> Result<Expr, ParseError> {
@@ -254,15 +285,15 @@ impl Parser {
 
     fn primary(&mut self) -> Result<Expr, ParseError> {
         if self.match_tokens(&[TokenType::False])? {
-            return Ok(Expr::Literal(Some(LoxObject::Boolean(false))));
+            return Ok(Expr::Literal(LoxObject::Boolean(false)));
         }
 
         if self.match_tokens(&[TokenType::True])? {
-            return Ok(Expr::Literal(Some(LoxObject::Boolean(true))));
+            return Ok(Expr::Literal(LoxObject::Boolean(true)));
         }
 
         if self.match_tokens(&[TokenType::Nil])? {
-            return Ok(Expr::Literal(Some(LoxObject::Nil)));
+            return Ok(Expr::Literal(LoxObject::Nil));
         }
 
         if self.match_tokens(&[TokenType::Number, TokenType::String])? {
