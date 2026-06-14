@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fmt::Formatter;
 use crate::errors::{LoxError, RuntimeError};
-use crate::interpreter::Environment;
+use crate::interpreter::Interpreter;
 use crate::token::{Token, TokenType};
 use crate::loxobject::LoxObject;
 
@@ -60,11 +60,11 @@ impl fmt::Display for Expr {
 }
 
 impl Expr {
-    pub(crate) fn evaluate(&self, environment: &mut Environment) -> Result<LoxObject, LoxError> {
+    pub fn evaluate(&self, interpreter: &mut Interpreter) -> Result<LoxObject, LoxError> {
         match self {
             Expr::Binary {left, operator, right} => {
 
-                let (l, r) = (left.evaluate(environment)?, right.evaluate(environment)?);
+                let (l, r) = (left.evaluate(interpreter)?, right.evaluate(interpreter)?);
 
                 match operator.token_type {
                     TokenType::Comma => {
@@ -125,10 +125,10 @@ impl Expr {
                 Ok(expr.to_owned())
             }
             Expr::Grouping(expr) => {
-                expr.evaluate(environment)
+                expr.evaluate(interpreter)
             }
             Expr::Unary {operator, right } => {
-                let r = right.evaluate(environment)?;
+                let r = right.evaluate(interpreter)?;
 
                 match operator.token_type {
                     TokenType::Minus => {
@@ -152,25 +152,25 @@ impl Expr {
 
             }
             Expr::Ternary { if_expr, then_branch, else_branch, operator } => {
-                let cond = if_expr.evaluate(environment)?;
+                let cond = if_expr.evaluate(interpreter)?;
 
                 let result = bool::try_from(cond)
                     .map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
 
                 if result {
-                    then_branch.evaluate(environment)
+                    then_branch.evaluate(interpreter)
                 }
                 else {
-                    else_branch.evaluate(environment)
+                    else_branch.evaluate(interpreter)
                 }
 
             }
             Expr::Variable(token) => {
-                environment.get(token)
+                interpreter.get(token)
             }
             Expr::Assign { name, value } => {
-                let value = value.evaluate(environment)?;
-                environment.assign(name, value.clone())?;
+                let value = value.evaluate(interpreter)?;
+                interpreter.assign(name, value.clone())?;
                 Ok(value)
             }
         }

@@ -1,6 +1,6 @@
 use crate::errors::LoxError;
 use crate::expr::Expr;
-use crate::interpreter::{Environment};
+use crate::interpreter::Interpreter;
 use crate::loxobject::LoxObject;
 use crate::token::Token;
 
@@ -8,18 +8,19 @@ use crate::token::Token;
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
-    Var(Token, Option<Expr>)
+    Var(Token, Option<Expr>),
+    Block(Vec<Stmt>)
 }
 
 impl Stmt {
-    pub fn execute(&self, environment: &mut Environment) -> Result<(), LoxError> {
+    pub fn execute(&self, interpreter: &mut Interpreter) -> Result<(), LoxError> {
         match self {
             Stmt::Expression(expr) => {
-                expr.evaluate(environment)?;
+                expr.evaluate(interpreter)?;
                 Ok(())
             }
             Stmt::Print(expr) => {
-                let value = expr.evaluate(environment)?;
+                let value = expr.evaluate(interpreter)?;
                 println!("{}", value);
                 Ok(())
             }
@@ -30,13 +31,23 @@ impl Stmt {
 
                     }
                     Some(expr) => {
-                        expr.evaluate(environment)?
+                        expr.evaluate(interpreter)?
                     }
                 };
-                environment.define(&token.lexeme, value)?;
+                interpreter.define(&token.lexeme, value);
                 Ok(())
 
 
+            }
+            Stmt::Block(stmts) => {
+                interpreter.push_scope();
+
+                for stmt in stmts {
+                    stmt.execute(interpreter)?;
+                }
+
+                interpreter.pop_scope();
+                Ok(())
             }
         }
     }

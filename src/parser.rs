@@ -87,9 +87,24 @@ impl Parser {
         if self.match_tokens(&[TokenType::Print])? {
             self.print_statement()
         }
+        else if self.match_tokens(&[TokenType::LeftBrace])? {
+            self.block()
+        }
         else {
             self.expression_statement()
         }
+    }
+
+    fn block(&mut self) -> Result<Stmt, ParseError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(&TokenType::RightBrace)? && !self.is_at_end()? {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(TokenType::RightBrace)?;
+
+        Ok(Stmt::Block(statements))
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
