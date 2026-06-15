@@ -1,6 +1,6 @@
 use crate::errors::RuntimeError;
 use std::cmp::Ordering;
-use std::fmt::{write, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Not, Sub};
 use crate::callables::LoxCallable;
 

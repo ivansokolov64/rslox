@@ -8,6 +8,7 @@ pub mod scanner;
 pub mod stmt;
 pub mod token;
 pub mod callables;
+pub mod natives;
 
 use crate::errors::LoxError;
 use std::process::ExitCode;

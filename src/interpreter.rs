@@ -3,6 +3,8 @@ use crate::object::LoxObject;
 use crate::stmt::Stmt;
 use crate::token::Token;
 use std::collections::HashMap;
+use crate::callables::{LoxCallable, NativeFunction};
+use crate::natives::clock_native;
 
 pub struct Interpreter {
     envs: EnvironmentStack,
@@ -18,8 +20,18 @@ pub struct EnvironmentStack {
 
 impl EnvironmentStack {
     pub fn new() -> Self {
+        let mut global = Environment::new();
+
+        let clock = LoxObject::Callable(LoxCallable::NativeFunction(NativeFunction {
+            name: "clock",
+            arity: 0,
+            function: clock_native,
+        }));
+
+        global.define("clock".to_string(), clock);
+
         Self {
-            envs: vec![Environment::new()],
+            envs: vec![global],
         }
     }
 

@@ -4,7 +4,7 @@ use crate::object::{LoxObject, LoxType};
 use crate::token::{Token, TokenType};
 use std::fmt;
 use std::fmt::Formatter;
-use crate::callables::{Call, LoxCallable};
+use crate::callables::Call;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
