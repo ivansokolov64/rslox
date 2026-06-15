@@ -10,6 +10,11 @@ pub enum Stmt {
     Print(Expr),
     Var(Token, Option<Expr>),
     Block(Vec<Stmt>),
+    If {
+        condition: Expr,
+        then_branch: Box<Stmt>,
+        else_branch: Box<Option<Stmt>>
+    }
 }
 
 impl Stmt {
@@ -41,6 +46,21 @@ impl Stmt {
 
                 envs.pop_scope();
                 Ok(())
+            }
+            Stmt::If { condition, then_branch, else_branch } => {
+
+                let cond = condition.evaluate(envs)?;
+
+                if cond.into() {
+                    then_branch.execute(envs)?;
+                }
+                else if let Some(else_stmt) = else_branch.as_ref() {
+                    else_stmt.execute(envs)?;
+                }
+
+                Ok(())
+
+
             }
         }
     }

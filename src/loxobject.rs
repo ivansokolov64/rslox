@@ -23,7 +23,7 @@ impl Not for LoxObject {
     type Output = Result<Self, RuntimeError>;
 
     fn not(self) -> Self::Output {
-        let b = bool::try_from(self)?;
+        let b = bool::from(self);
         Ok(LoxObject::Boolean(!b))
     }
 }
@@ -164,14 +164,13 @@ impl TryFrom<LoxObject> for String {
     }
 }
 
-impl TryFrom<LoxObject> for bool {
-    type Error = RuntimeError;
+impl From<LoxObject> for bool {
 
-    fn try_from(value: LoxObject) -> Result<Self, Self::Error> {
+    fn from(value: LoxObject) -> Self {
         match value {
-            LoxObject::Boolean(bool) => Ok(bool),
-            LoxObject::Nil => Ok(false),
-            _ => Ok(true),
+            LoxObject::Boolean(bool) => bool,
+            LoxObject::Nil => false,
+            _ => true
         }
     }
 }

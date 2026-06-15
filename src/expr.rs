@@ -17,6 +17,11 @@ pub enum Expr {
         right: Box<Expr>,
     },
     Literal(LoxObject),
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>
+    },
     Grouping(Box<Expr>),
     Unary {
         operator: Token,
@@ -26,7 +31,6 @@ pub enum Expr {
         if_expr: Box<Expr>,
         then_branch: Box<Expr>,
         else_branch: Box<Expr>,
-        operator: Token,
     },
     Variable(Token),
 }
@@ -54,19 +58,19 @@ impl fmt::Display for Expr {
                 if_expr,
                 then_branch,
                 else_branch,
-                operator,
             } => {
                 write!(
                     f,
-                    "(ternary {} {if_expr} {then_branch} {else_branch})",
-                    operator.lexeme
-                )
+                    "(ternary {if_expr} {then_branch} {else_branch})")
             }
             Expr::Variable(token) => {
                 write!(f, "(variable {token}")
             }
             Expr::Assign { name, value } => {
                 write!(f, "(assign {name} {value})")
+            }
+            Expr::Logical { left, operator, right } => {
+                write!(f, "(logical {left} {operator} {right})")
             }
         }
     }
@@ -136,14 +140,10 @@ impl Expr {
                 if_expr,
                 then_branch,
                 else_branch,
-                operator,
             } => {
                 let cond = if_expr.evaluate(envs)?;
 
-                let result = bool::try_from(cond)
-                    .map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
-
-                if result {
+                if cond.into() {
                     then_branch.evaluate(envs)
                 } else {
                     else_branch.evaluate(envs)
@@ -154,6 +154,23 @@ impl Expr {
                 let value = value.evaluate(envs)?;
                 envs.assign(name, value.clone())?;
                 Ok(value)
+            }
+            Expr::Logical { left, operator, right } => {
+                let l = left.evaluate(envs)?;
+                let truthy_l = bool::from(l.clone());
+
+                if let TokenType::Or = &operator.token_type {
+                    if truthy_l {
+                        return Ok(l);
+                    }
+                }
+                else {
+                    if !truthy_l {
+                        return Ok(l);
+                    }
+                }
+
+                right.evaluate(envs)
             }
         }
     }

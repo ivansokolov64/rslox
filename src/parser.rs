@@ -75,7 +75,10 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, ParseError> {
-        if self.match_tokens(&[TokenType::Print])? {
+        if self.match_tokens(&[TokenType::If])? {
+            self.if_statement()
+        }
+        else if self.match_tokens(&[TokenType::Print])? {
             self.print_statement()
         } else if self.match_tokens(&[TokenType::LeftBrace])? {
             self.block()
@@ -94,6 +97,28 @@ impl Parser {
         self.consume(TokenType::RightBrace)?;
 
         Ok(Stmt::Block(statements))
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen)?;
+
+        let condition = self.expression()?;
+
+        self.consume(TokenType::RightParen)?;
+
+        let then_branch = self.statement()?;
+
+        let mut else_branch: Option<Stmt> = None;
+
+        if self.match_tokens(&[TokenType::Else])? {
+            else_branch = Some(self.statement()?);
+        }
+
+        Ok(Stmt::If {
+            condition,
+            then_branch: Box::new(then_branch),
+            else_branch: Box::new(else_branch),
+        })
     }
 
     fn print_statement(&mut self) -> Result<Stmt, ParseError> {
@@ -153,14 +178,10 @@ impl Parser {
     }
 
     fn ternary(&mut self) -> Result<Expr, ParseError> {
-        let mut expr = self.equality()?;
+        let mut expr = self.or()?;
 
         if self.match_tokens(&[TokenType::Question])? {
-            let operator = self
-                .previous()
-                .expect("previous() should exist after match_tokens()")
-                .clone();
-            let then_branch = self.equality()?;
+            let then_branch = self.or()?;
             self.consume(TokenType::Colon)?;
             let else_branch = self.ternary()?;
 
@@ -168,12 +189,51 @@ impl Parser {
                 if_expr: Box::from(expr),
                 then_branch: Box::from(then_branch),
                 else_branch: Box::from(else_branch),
-                operator,
             }
         }
         Ok(expr)
     }
 
+    fn or(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.and()?;
+
+        while self.match_tokens(&[TokenType::Or])? {
+            let operator = self.previous()
+                .expect("previous() should exist after match_tokens()")
+                .clone();
+
+            let right = self.and()?;
+
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right)
+            }
+
+        }
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.equality()?;
+
+        while self.match_tokens(&[TokenType::And])? {
+            let operator = self.previous()
+                .expect("previous() should exist after match_tokens()")
+                .clone();
+
+            let right = self.equality()?;
+
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right)
+            }
+
+        }
+        Ok(expr)
+    }
+    
     fn equality(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.comparison()?;
 
