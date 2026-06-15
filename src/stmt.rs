@@ -1,6 +1,6 @@
 use crate::errors::LoxError;
 use crate::expr::Expr;
-use crate::interpreter::Interpreter;
+use crate::interpreter::EnvironmentStack;
 use crate::loxobject::LoxObject;
 use crate::token::Token;
 
@@ -9,44 +9,37 @@ pub enum Stmt {
     Expression(Expr),
     Print(Expr),
     Var(Token, Option<Expr>),
-    Block(Vec<Stmt>)
+    Block(Vec<Stmt>),
 }
 
 impl Stmt {
-    pub fn execute(&self, interpreter: &mut Interpreter) -> Result<(), LoxError> {
+    pub fn execute(&self, envs: &mut EnvironmentStack) -> Result<(), LoxError> {
         match self {
             Stmt::Expression(expr) => {
-                expr.evaluate(interpreter)?;
+                expr.evaluate(envs)?;
                 Ok(())
             }
             Stmt::Print(expr) => {
-                let value = expr.evaluate(interpreter)?;
+                let value = expr.evaluate(envs)?;
                 println!("{}", value);
                 Ok(())
             }
             Stmt::Var(token, expression) => {
                 let value: LoxObject = match expression {
-                    None => {
-                        LoxObject::Nil
-
-                    }
-                    Some(expr) => {
-                        expr.evaluate(interpreter)?
-                    }
+                    None => LoxObject::Nil,
+                    Some(expr) => expr.evaluate(envs)?,
                 };
-                interpreter.define(&token.lexeme, value);
+                envs.define(&token.lexeme, value);
                 Ok(())
-
-
             }
             Stmt::Block(stmts) => {
-                interpreter.push_scope();
+                envs.push_scope();
 
                 for stmt in stmts {
-                    stmt.execute(interpreter)?;
+                    stmt.execute(envs)?;
                 }
 
-                interpreter.pop_scope();
+                envs.pop_scope();
                 Ok(())
             }
         }

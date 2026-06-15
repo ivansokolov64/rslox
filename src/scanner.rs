@@ -1,7 +1,6 @@
 use crate::errors::{LoxError, ScannerError};
-use crate::token::{Token, TokenType};
 use crate::loxobject::LoxObject;
-
+use crate::token::{Token, TokenType};
 
 fn keyword(s: &str) -> Option<TokenType> {
     match s {
@@ -21,7 +20,7 @@ fn keyword(s: &str) -> Option<TokenType> {
         "true" => Some(TokenType::True),
         "var" => Some(TokenType::Var),
         "while" => Some(TokenType::While),
-        _ => None
+        _ => None,
     }
 }
 
@@ -30,7 +29,7 @@ pub struct Scanner {
     current: usize,
     start: usize,
     line: usize,
-    tokens: Vec<Token>
+    tokens: Vec<Token>,
 }
 
 impl Scanner {
@@ -44,11 +43,7 @@ impl Scanner {
         }
     }
 
-
-
     pub fn scan_tokens(&mut self) -> Result<Vec<Token>, LoxError> {
-
-
         while self.current < self.source.len() {
             self.start = self.current;
             self.scan_token()?;
@@ -57,17 +52,13 @@ impl Scanner {
         self.add_without_literal(TokenType::EOF)?;
 
         Ok(self.tokens.clone())
-
     }
 
     fn scan_token(&mut self) -> Result<(), LoxError> {
-
         let c = self.next();
 
         match c.unwrap() {
-
             // Single characters
-
             '(' => self.add_without_literal(TokenType::LeftParen),
             ')' => self.add_without_literal(TokenType::RightParen),
             '{' => self.add_without_literal(TokenType::LeftBrace),
@@ -82,30 +73,40 @@ impl Scanner {
             ':' => self.add_without_literal(TokenType::Colon),
 
             // One or two characters
-
-            '!' =>
-                { 
-                    let t = if self.match_next('=')? { TokenType::BangEqual } else { TokenType::Bang };
-                    self.add_without_literal(t)
-                },
-            '=' =>
-                {
-                    let t = if self.match_next('=')? { TokenType::EqualEqual } else { TokenType::Equal };
-                    self.add_without_literal(t)
-                },
-            '<' =>
-                {
-                    let t = if self.match_next('=')? { TokenType::LessEqual } else { TokenType::Less };
-                    self.add_without_literal(t)
-                },
-            '>' =>
-                {
-                    let t = if self.match_next('=')? { TokenType::GreaterEqual } else { TokenType::Greater };
-                    self.add_without_literal(t)
-                },
+            '!' => {
+                let t = if self.match_next('=')? {
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                };
+                self.add_without_literal(t)
+            }
+            '=' => {
+                let t = if self.match_next('=')? {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                };
+                self.add_without_literal(t)
+            }
+            '<' => {
+                let t = if self.match_next('=')? {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                };
+                self.add_without_literal(t)
+            }
+            '>' => {
+                let t = if self.match_next('=')? {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                };
+                self.add_without_literal(t)
+            }
 
             // Special handling of SLASH for comments or division
-
             '/' => {
                 if self.match_next('/')? {
                     while self.peek() != Some('\n') && !self.is_at_end() {
@@ -113,7 +114,9 @@ impl Scanner {
                     }
                     Ok(())
                 } else if self.match_next('*')? {
-                    while !(self.peek() == Some('*') && self.peek_next() == Some('/')) && !self.is_at_end() {
+                    while !(self.peek() == Some('*') && self.peek_next() == Some('/'))
+                        && !self.is_at_end()
+                    {
                         self.next();
                     }
                     self.next(); // consume '*'
@@ -122,45 +125,50 @@ impl Scanner {
                 } else {
                     self.add_without_literal(TokenType::Slash)
                 }
-            },
-
+            }
 
             '"' => self.string(),
 
-
             // White space, new lines, etc.
-
-            ' ' | '\r' | '\t' => {Ok(())},
-            '\n' => { self.line += 1; Ok(()) },
-
+            ' ' | '\r' | '\t' => Ok(()),
+            '\n' => {
+                self.line += 1;
+                Ok(())
+            }
 
             '0'..='9' => self.number(),
 
             c if c.is_alphabetic() => self.identifier(),
 
-            o => Err(LoxError::ScannerError(self.line, ScannerError::UnexpectedCharacter(o)))
+            o => Err(LoxError::ScannerError(
+                self.line,
+                ScannerError::UnexpectedCharacter(o),
+            )),
         }
-
     }
 
     // Functions for handling specific tokens
 
     fn string(&mut self) -> Result<(), LoxError> {
         while self.peek() != Some('"') && !self.is_at_end() {
-            if self.peek() == Some('\n') { self.line += 1 };
+            if self.peek() == Some('\n') {
+                self.line += 1
+            };
             self.next();
         }
 
         if self.is_at_end() {
-           return Err(LoxError::ScannerError(self.line, ScannerError::StringNotTerminated));
+            return Err(LoxError::ScannerError(
+                self.line,
+                ScannerError::StringNotTerminated,
+            ));
         }
 
         self.next();
 
-        let value: String = self.source[self.start + 1 .. self.current - 1].to_string();
+        let value: String = self.source[self.start + 1..self.current - 1].to_string();
 
         self.add_token(TokenType::String, LoxObject::String(value))
-
     }
 
     fn number(&mut self) -> Result<(), LoxError> {
@@ -178,12 +186,11 @@ impl Scanner {
 
         match self.source[self.start..self.current].parse::<f64>() {
             Ok(number) => self.add_token(TokenType::Number, LoxObject::Number(number)),
-            Err(_) => {
-                Err(LoxError::ScannerError(self.line, ScannerError::InvalidNumber))
-            }
+            Err(_) => Err(LoxError::ScannerError(
+                self.line,
+                ScannerError::InvalidNumber,
+            )),
         }
-
-
     }
 
     fn identifier(&mut self) -> Result<(), LoxError> {
@@ -194,30 +201,21 @@ impl Scanner {
         let text = &self.source[self.start..self.current];
 
         match keyword(text) {
-            None => {
-                self.add_without_literal(TokenType::Identifier)
-            }
-            Some(token_type) => {
-                self.add_without_literal(token_type)
-            }
+            None => self.add_without_literal(TokenType::Identifier),
+            Some(token_type) => self.add_without_literal(token_type),
         }
-
-
     }
 
-
-
-    fn add_without_literal(&mut self, token_type: TokenType)
-        -> Result<(), LoxError>{
+    fn add_without_literal(&mut self, token_type: TokenType) -> Result<(), LoxError> {
         self.add_token(token_type, LoxObject::Nil)
     }
 
     fn add_token(&mut self, token_type: TokenType, literal: LoxObject) -> Result<(), LoxError> {
         let text: String = self.source[self.start..self.current].to_string();
-        self.tokens.push(Token::new(token_type, text, literal, self.line));
+        self.tokens
+            .push(Token::new(token_type, text, literal, self.line));
         Ok(())
     }
-
 
     // Character processing
 
@@ -233,7 +231,7 @@ impl Scanner {
     }
     fn peek(&self) -> Option<char> {
         if self.is_at_end() {
-            return Some('\0')
+            return Some('\0');
         }
         self.source[self.current..].chars().next()
     }
@@ -253,8 +251,4 @@ impl Scanner {
     fn is_at_end(&self) -> bool {
         self.current >= self.source.len()
     }
-
-
-
-
 }

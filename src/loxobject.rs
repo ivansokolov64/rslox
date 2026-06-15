@@ -1,14 +1,14 @@
+use crate::errors::RuntimeError;
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Not, Sub};
-use crate::errors::RuntimeError;
 
 #[derive(Clone, Debug)]
 pub enum LoxType {
     Number,
     String,
     Boolean,
-    Nil
+    Nil,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -16,7 +16,7 @@ pub enum LoxObject {
     Number(f64),
     String(String),
     Boolean(bool),
-    Nil
+    Nil,
 }
 
 impl Not for LoxObject {
@@ -33,19 +33,17 @@ impl Add for LoxObject {
 
     fn add(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxObject::Number(l), LoxObject::Number(r)) => {
-                Ok(LoxObject::Number(l+r))
-            }
+            (LoxObject::Number(l), LoxObject::Number(r)) => Ok(LoxObject::Number(l + r)),
             (LoxObject::String(l), LoxObject::String(r)) => {
-                Ok(LoxObject::String(format!("{}{}",l, r)))
-            },
+                Ok(LoxObject::String(format!("{}{}", l, r)))
+            }
             (LoxObject::String(_), r) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::String,
-                received: r
+                received: r,
             }),
             (_, r) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: r
+                received: r,
             }),
         }
     }
@@ -56,17 +54,15 @@ impl Sub for LoxObject {
 
     fn sub(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxObject::Number(l), LoxObject::Number(r)) => {
-                Ok(LoxObject::Number(l-r))
-            }
+            (LoxObject::Number(l), LoxObject::Number(r)) => Ok(LoxObject::Number(l - r)),
             (LoxObject::Number(_), r) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: r
+                received: r,
             }),
             (l, _) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: l
-            })
+                received: l,
+            }),
         }
     }
 }
@@ -76,14 +72,14 @@ impl Mul for LoxObject {
 
     fn mul(self, rhs: Self) -> Self::Output {
         match (self, rhs) {
-            (LoxObject::Number(l), LoxObject::Number(r)) => Ok(LoxObject::Number(l*r)),
+            (LoxObject::Number(l), LoxObject::Number(r)) => Ok(LoxObject::Number(l * r)),
             (LoxObject::Number(_), r) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: r
+                received: r,
             }),
             (l, _) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: l
+                received: l,
             }),
         }
     }
@@ -97,19 +93,18 @@ impl Div for LoxObject {
             (LoxObject::Number(l), LoxObject::Number(r)) => {
                 if r == 0f64 {
                     Err(RuntimeError::DivisionByZero)
+                } else {
+                    Ok(LoxObject::Number(l / r))
                 }
-                else {
-                    Ok(LoxObject::Number(l/r))
-                }
-            },
+            }
             (LoxObject::Number(_), r) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: r
+                received: r,
             }),
             (l, _) => Err(RuntimeError::InvalidOperand {
                 expected: LoxType::Number,
-                received: l
-            })
+                received: l,
+            }),
         }
     }
 }
@@ -117,14 +112,11 @@ impl Div for LoxObject {
 impl PartialOrd for LoxObject {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (LoxObject::Number(l), LoxObject::Number(r)) => {
-                l.partial_cmp(r)
-            }
-            (_, _) => None
+            (LoxObject::Number(l), LoxObject::Number(r)) => l.partial_cmp(r),
+            (_, _) => None,
         }
     }
 }
-
 
 impl Display for LoxObject {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -137,7 +129,7 @@ impl Display for LoxObject {
             }
             LoxObject::Boolean(b) => {
                 write!(f, "{b}")
-            },
+            }
             LoxObject::Nil => {
                 write!(f, "nil")
             }
@@ -146,12 +138,14 @@ impl Display for LoxObject {
 }
 
 impl TryFrom<LoxObject> for f64 {
-
     type Error = RuntimeError;
     fn try_from(value: LoxObject) -> Result<Self, Self::Error> {
         match value {
             LoxObject::Number(val) => Ok(val),
-            t => Err(RuntimeError::InvalidOperand { expected: LoxType::Number, received: t })
+            t => Err(RuntimeError::InvalidOperand {
+                expected: LoxType::Number,
+                received: t,
+            }),
         }
     }
 }
@@ -162,7 +156,10 @@ impl TryFrom<LoxObject> for String {
     fn try_from(value: LoxObject) -> Result<Self, Self::Error> {
         match value {
             LoxObject::String(string) => Ok(string),
-            t => Err(RuntimeError::InvalidOperand { expected: LoxType::String, received: t })
+            t => Err(RuntimeError::InvalidOperand {
+                expected: LoxType::String,
+                received: t,
+            }),
         }
     }
 }
@@ -174,7 +171,7 @@ impl TryFrom<LoxObject> for bool {
         match value {
             LoxObject::Boolean(bool) => Ok(bool),
             LoxObject::Nil => Ok(false),
-            _ => Ok(true)
+            _ => Ok(true),
         }
     }
 }

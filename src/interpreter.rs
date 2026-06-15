@@ -1,88 +1,93 @@
-use std::collections::HashMap;
 use crate::errors::{LoxError, RuntimeError};
 use crate::loxobject::LoxObject;
 use crate::stmt::Stmt;
 use crate::token::Token;
+use std::collections::HashMap;
 
 pub struct Interpreter {
-    environments: Vec<Environment>
+    envs: EnvironmentStack,
 }
 
 pub struct Environment {
     values: HashMap<String, LoxObject>,
 }
 
+pub struct EnvironmentStack {
+    envs: Vec<Environment>,
+}
 
-
-impl Interpreter {
-
+impl EnvironmentStack {
     pub fn new() -> Self {
         Self {
-            environments: vec![Environment::new()]
+            envs: vec![Environment::new()],
         }
     }
-    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), LoxError> {
-        for statement in statements {
-            statement.execute(self)?;
-        }
-        Ok(())
+
+    pub fn push_scope(&mut self) {
+        self.envs.push(Environment::new())
+    }
+
+    pub fn pop_scope(&mut self) {
+        self.envs.pop();
     }
 
     pub fn define(&mut self, name: &String, value: LoxObject) {
-
-        self.environments.last_mut()
-            .expect("environment stack should never be empty")
+        self.envs
+            .last_mut()
+            .expect("Environment stack should never be empty")
             .define(name.to_string(), value)
     }
 
     pub fn get(&mut self, name: &Token) -> Result<LoxObject, LoxError> {
-
-        for env in self.environments.iter().rev() {
+        for env in self.envs.iter().rev() {
             if let Some(val) = env.values.get(&name.lexeme) {
-                return Ok(val.to_owned())
+                return Ok(val.to_owned());
             }
         }
 
-        Err(LoxError::RuntimeError(name.clone(),
-                                   RuntimeError::UndefinedVariable(name.lexeme.to_string())))
-
+        Err(LoxError::RuntimeError(
+            name.clone(),
+            RuntimeError::UndefinedVariable(name.lexeme.to_string()),
+        ))
     }
 
     pub fn assign(&mut self, name: &Token, value: LoxObject) -> Result<(), LoxError> {
-
-        for env in self.environments.iter_mut().rev() {
+        for env in self.envs.iter_mut().rev() {
             if env.values.contains_key(&name.lexeme) {
                 env.values.insert(name.lexeme.to_string(), value);
-                return Ok(())
+                return Ok(());
             }
         }
 
-        Err(LoxError::RuntimeError(name.clone(), RuntimeError::UndefinedVariable(name.lexeme.to_string())))
-
+        Err(LoxError::RuntimeError(
+            name.clone(),
+            RuntimeError::UndefinedVariable(name.lexeme.to_string()),
+        ))
     }
+}
 
-    pub fn push_scope(&mut self) {
-        self.environments.push(Environment::new())
+impl Interpreter {
+    pub fn new() -> Self {
+        Self {
+            envs: EnvironmentStack::new(),
+        }
     }
-
-    pub fn pop_scope(&mut self) {
-        self.environments.pop();
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), LoxError> {
+        for statement in statements {
+            statement.execute(&mut self.envs)?;
+        }
+        Ok(())
     }
-
-
 }
 
 impl Environment {
-
     pub fn new() -> Self {
         Self {
-            values: HashMap::new()
+            values: HashMap::new(),
         }
     }
-
 
     fn define(&mut self, name: String, value: LoxObject) {
         self.values.insert(name, value);
     }
-
 }

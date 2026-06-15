@@ -1,9 +1,8 @@
-use std::fmt::{Display, Formatter};
 use crate::loxobject::LoxObject;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TokenType {
-
     LeftParen,
     RightParen,
     LeftBrace,
@@ -46,7 +45,7 @@ pub enum TokenType {
     True,
     Var,
     While,
-    EOF
+    EOF,
 }
 
 #[derive(Clone, Debug)]
@@ -54,7 +53,7 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: LoxObject,
-    pub line: usize
+    pub line: usize,
 }
 
 impl Token {
@@ -63,14 +62,17 @@ impl Token {
             token_type,
             lexeme,
             literal,
-            line
+            line,
         }
     }
 }
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} {} {:?}", self.token_type, self.lexeme, self.literal)
+        write!(
+            f,
+            "{:?} {} {:?}",
+            self.token_type, self.lexeme, self.literal
+        )
     }
 }
-
