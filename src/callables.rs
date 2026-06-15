@@ -7,7 +7,6 @@ use crate::object::LoxObject;
 pub enum LoxCallable {
     LoxFunction(LoxFunction),
     NativeFunction(NativeFunction),
-    LoxClass(LoxClass)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,11 +19,6 @@ pub struct NativeFunction {
     pub name: &'static str,
     pub arity: usize,
     pub function: fn(&mut EnvironmentStack, Vec<LoxObject>) -> Result<LoxObject, LoxError>
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct LoxClass {
-
 }
 
 pub trait Call {
@@ -41,9 +35,6 @@ impl Call for LoxCallable {
             LoxCallable::NativeFunction(f) => {
                 f.call(envs, arguments)
             }
-            LoxCallable::LoxClass(c) => {
-                c.call(envs, arguments)
-            }
         }
     }
 
@@ -54,9 +45,6 @@ impl Call for LoxCallable {
             }
             LoxCallable::NativeFunction(f) => {
                 f.arity()
-            }
-            LoxCallable::LoxClass(c) => {
-                c.arity()
             }
         }
     }
@@ -72,15 +60,6 @@ impl Call for LoxFunction {
     }
 }
 
-impl Call for LoxClass {
-    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
-        todo!()
-    }
-
-    fn arity(&self) -> usize {
-        todo!()
-    }
-}
 
 impl Call for NativeFunction {
     fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
