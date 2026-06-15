@@ -9,6 +9,10 @@ pub enum Stmt {
     Expression(Expr),
     Print(Expr),
     Var(Token, Option<Expr>),
+    While {
+        condition: Expr,
+        body: Box<Stmt>
+    },
     Block(Vec<Stmt>),
     If {
         condition: Expr,
@@ -61,6 +65,12 @@ impl Stmt {
                 Ok(())
 
 
+            }
+            Stmt::While { condition, body } => {
+                while bool::from(condition.evaluate(envs)?) {
+                    body.execute(envs)?;
+                }
+                Ok(())
             }
         }
     }

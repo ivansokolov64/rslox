@@ -80,11 +80,89 @@ impl Parser {
         }
         else if self.match_tokens(&[TokenType::Print])? {
             self.print_statement()
-        } else if self.match_tokens(&[TokenType::LeftBrace])? {
+        }
+        else if self.match_tokens(&[TokenType::While])? {
+            self.while_statement()
+        }
+        else if self.match_tokens(&[TokenType::For])? {
+            self.for_statement()
+        }
+        else if self.match_tokens(&[TokenType::LeftBrace])? {
             self.block()
         } else {
             self.expression_statement()
         }
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen)?;
+
+        let initializer: Option<Stmt>;
+
+        if self.match_tokens(&[TokenType::Semicolon])? {
+            initializer = None;
+        }
+        else if self.match_tokens(&[TokenType::Var])? {
+            initializer = Some(self.var_declaration()?);
+        }
+        else {
+            initializer = Some(self.expression_statement()?);
+        }
+
+        let mut condition: Option<Expr> = None;
+
+        if !self.check(&TokenType::Semicolon)? {
+            condition = Some(self.expression()?);
+        }
+
+        self.consume(TokenType::Semicolon)?;
+
+        let mut increment: Option<Expr> = None;
+
+        if !self.check(&TokenType::RightParen)? {
+            increment = Some(self.expression()?);
+        }
+
+        self.consume(TokenType::RightParen)?;
+
+        let mut body = self.statement()?;
+
+        if let Some(increment) = increment {
+            body = Stmt::Block(vec![body, Stmt::Expression(increment)]);
+        }
+
+        match condition {
+            None => {
+                body = Stmt::While {
+                    condition: Expr::Literal(LoxObject::Boolean(true)),
+                    body: Box::new(body),
+                }
+            }
+            Some(condition) => {
+                body = Stmt::While {
+                    condition,
+                    body: Box::new(body),
+                }
+            }
+        }
+
+        if let Some(initializer) = initializer {
+            body = Stmt::Block(vec![initializer, body])
+        }
+        
+        Ok(body)
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, ParseError> {
+        self.consume(TokenType::LeftParen)?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen)?;
+        let body = self.statement()?;
+
+        Ok(Stmt::While {
+            condition,
+            body: Box::new(body)
+        })
     }
 
     fn block(&mut self) -> Result<Stmt, ParseError> {
@@ -233,7 +311,7 @@ impl Parser {
         }
         Ok(expr)
     }
-    
+
     fn equality(&mut self) -> Result<Expr, ParseError> {
         let mut expr = self.comparison()?;
 
