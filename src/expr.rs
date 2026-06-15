@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 use crate::errors::{LoxError, RuntimeError};
 use crate::interpreter::Interpreter;
 use crate::token::{Token, TokenType};
-use crate::loxobject::LoxObject;
+use crate::loxobject::{LoxObject, LoxType};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -66,54 +66,36 @@ impl Expr {
 
                 let (l, r) = (left.evaluate(interpreter)?, right.evaluate(interpreter)?);
 
+                let cmp_result = l.partial_cmp(&r)
+                    .ok_or_else(|| LoxError::RuntimeError(operator.clone(), RuntimeError::InvalidOperand {expected: LoxType::Number, received: r.clone() }));
+
                 match operator.token_type {
                     TokenType::Comma => {
                         Ok(r)
                     },
                     TokenType::Greater => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Boolean(a > b))
-
+                        Ok(LoxObject::Boolean(cmp_result?.is_gt()))
                     },
                     TokenType::GreaterEqual => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Boolean(a >= b))
+                        Ok(LoxObject::Boolean(cmp_result?.is_ge()))
                     },
                     TokenType::Less => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Boolean(a < b))
+                        Ok(LoxObject::Boolean(cmp_result?.is_lt()))
                     },
                     TokenType::LessEqual => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Boolean(a <= b))
+                        Ok(LoxObject::Boolean(cmp_result?.is_le()))
                     },
                     TokenType::Minus => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Number(a - b))
+                        (l-r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))
                     },
                     TokenType::Slash => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-
-                        // Add division by zero error
-                        match b {
-                            0f64 => Err(LoxError::RuntimeError(operator.clone(), RuntimeError::DivisionByZero)),
-                            _ => Ok(LoxObject::Number(a / b))
-                        }
-
+                        (l/r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))
                     },
                     TokenType::Star => {
-                        let (a, b) = numeric_operands(operator, l, r)?;
-                        Ok(LoxObject::Number(a * b))
+                        (l*r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))
                     },
                     TokenType::Plus => {
-                        if let LoxObject::String(str_l) = &l
-                            && let LoxObject::String(str_r) = &r {
-                            Ok(LoxObject::String(format!("{}{}", str_l, str_r)))
-                        }
-                        else {
-                            let (a, b) = numeric_operands(operator, l, r)?;
-                            Ok(LoxObject::Number(a + b))
-                        }
+                        (l+r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))
                     },
                     TokenType::BangEqual => Ok(LoxObject::Boolean(l != r)),
                     TokenType::EqualEqual => Ok(LoxObject::Boolean(l == r)),
@@ -175,14 +157,4 @@ impl Expr {
             }
         }
     }
-}
-
-fn numeric_operands(
-    operator: &Token,
-    l: LoxObject,
-    r: LoxObject,
-) -> Result<(f64, f64), LoxError> {
-    let a = f64::try_from(l).map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
-    let b = f64::try_from(r).map_err(|e| LoxError::RuntimeError(operator.clone(), e))?;
-    Ok((a, b))
 }
