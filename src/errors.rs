@@ -1,5 +1,5 @@
 use crate::expr::Expr;
-use crate::loxobject::{LoxObject, LoxType};
+use crate::object::{LoxObject, LoxType};
 use crate::token::{Token, TokenType};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -18,6 +18,7 @@ pub enum ParseError {
     OutOfBounds,
     ExpectExpression,
     InvalidAssignmentTarget,
+    TooManyArguments
 }
 
 #[derive(Debug)]
@@ -31,6 +32,7 @@ pub enum RuntimeError {
     NoneEval,
     DivisionByZero,
     UndefinedVariable(String),
+    InvalidCallable
 }
 
 #[derive(Debug)]
@@ -88,6 +90,9 @@ impl Display for ParseError {
             ParseError::InvalidAssignmentTarget => {
                 write!(f, "Invalid assignment target")
             }
+            ParseError::TooManyArguments => {
+                write!(f, "Number of arguments cannot exceed 255")
+            }
         }
     }
 }
@@ -116,6 +121,9 @@ impl Display for RuntimeError {
             }
             RuntimeError::UndefinedVariable(name) => {
                 write!(f, "Undefined variable {name}")
+            }
+            RuntimeError::InvalidCallable => {
+                write!(f, "Can only call functions and classes.")
             }
         }
     }

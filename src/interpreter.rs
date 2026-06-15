@@ -1,5 +1,5 @@
 use crate::errors::{LoxError, RuntimeError};
-use crate::loxobject::LoxObject;
+use crate::object::LoxObject;
 use crate::stmt::Stmt;
 use crate::token::Token;
 use std::collections::HashMap;

@@ -1,9 +1,10 @@
 use crate::errors::{LoxError, RuntimeError};
 use crate::interpreter::{EnvironmentStack};
-use crate::loxobject::{LoxObject, LoxType};
+use crate::object::{LoxObject, LoxType};
 use crate::token::{Token, TokenType};
 use std::fmt;
 use std::fmt::Formatter;
+use crate::callables::{Call, LoxCallable};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -33,6 +34,11 @@ pub enum Expr {
         else_branch: Box<Expr>,
     },
     Variable(Token),
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>
+    }
 }
 
 impl fmt::Display for Expr {
@@ -71,6 +77,9 @@ impl fmt::Display for Expr {
             }
             Expr::Logical { left, operator, right } => {
                 write!(f, "(logical {left} {operator} {right})")
+            }
+            Expr::Call { callee, paren, arguments: _arguments } => {
+                write!(f, "(call {callee} {paren})")
             }
         }
     }
@@ -171,6 +180,17 @@ impl Expr {
                 }
 
                 right.evaluate(envs)
+            }
+            Expr::Call { callee, paren, arguments } => {
+                let callee = callee.evaluate(envs)?;
+
+                let arguments: Vec<LoxObject> = arguments.iter().map(|a| a.evaluate(envs))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                match callee {
+                    LoxObject::Callable(lc) => lc.call(envs, arguments),
+                    _ => Err(LoxError::RuntimeError(paren.clone(), RuntimeError::InvalidCallable))
+                }
             }
         }
     }

@@ -1,7 +1,8 @@
 use crate::errors::RuntimeError;
 use std::cmp::Ordering;
-use std::fmt::{Display, Formatter};
+use std::fmt::{write, Display, Formatter};
 use std::ops::{Add, Div, Mul, Not, Sub};
+use crate::callables::LoxCallable;
 
 #[derive(Clone, Debug)]
 pub enum LoxType {
@@ -17,6 +18,7 @@ pub enum LoxObject {
     String(String),
     Boolean(bool),
     Nil,
+    Callable(LoxCallable)
 }
 
 impl Not for LoxObject {
@@ -132,6 +134,9 @@ impl Display for LoxObject {
             }
             LoxObject::Nil => {
                 write!(f, "nil")
+            }
+            LoxObject::Callable(c) => {
+                write!(f, "{c}")
             }
         }
     }

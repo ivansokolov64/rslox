@@ -1,6 +1,6 @@
 use crate::errors::{LoxError, ParseError};
 use crate::expr::Expr;
-use crate::loxobject::LoxObject;
+use crate::object::LoxObject;
 use crate::stmt::Stmt;
 use crate::token::{Token, TokenType};
 
@@ -413,8 +413,53 @@ impl Parser {
                 right: Box::from(right),
             })
         } else {
-            self.primary()
+            self.call()
         }
+    }
+
+    fn call(&mut self) -> Result<Expr, ParseError> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if self.match_tokens(&[TokenType::LeftParen])? {
+                expr = self.finish_call(expr)?;
+            }
+            else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, ParseError> {
+        let mut arguments: Vec<Expr> = vec![];
+
+        if !self.check(&TokenType::RightParen)? {
+            loop {
+
+                if arguments.len() >= 255 {
+                    return Err(ParseError::TooManyArguments)
+                }
+
+                arguments.push(self.expression()?);
+
+                if !self.match_tokens(&[TokenType::Comma])? {
+                    break;
+                }
+            }
+        }
+
+        let paren = match self.consume(TokenType::RightParen)? {
+            Some(token) => token.clone(),
+            None => return Err(ParseError::InvalidToken(TokenType::RightParen, TokenType::EOF))
+        };
+
+        Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren,
+            arguments
+        })
     }
 
     fn primary(&mut self) -> Result<Expr, ParseError> {

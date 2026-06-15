@@ -1,4 +1,4 @@
-use crate::loxobject::LoxObject;
+use crate::object::LoxObject;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Eq, PartialEq)]

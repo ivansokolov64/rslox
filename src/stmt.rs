@@ -1,7 +1,7 @@
 use crate::errors::LoxError;
 use crate::expr::Expr;
 use crate::interpreter::EnvironmentStack;
-use crate::loxobject::LoxObject;
+use crate::object::LoxObject;
 use crate::token::Token;
 
 #[derive(Debug, Clone)]

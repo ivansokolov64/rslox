@@ -1,0 +1,72 @@
+use std::fmt::{Display, Formatter};
+use crate::errors::LoxError;
+use crate::interpreter::{EnvironmentStack, Interpreter};
+use crate::object::LoxObject;
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LoxCallable {
+    LoxFunction(LoxFunction),
+    NativeFunction(NativeFunction),
+    LoxClass(LoxClass)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoxFunction {
+
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct NativeFunction {
+
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoxClass {
+
+}
+
+pub trait Call {
+    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError>;
+}
+
+impl Call for LoxCallable {
+    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
+        match self {
+            LoxCallable::LoxFunction(f) => {
+                f.call(envs, arguments)
+            }
+            LoxCallable::NativeFunction(f) => {
+                f.call(envs, arguments)
+            }
+            LoxCallable::LoxClass(c) => {
+                c.call(envs, arguments)
+            }
+        }
+    }
+}
+
+impl Call for LoxFunction {
+    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
+        todo!()
+    }
+}
+
+impl Call for LoxClass {
+    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
+        todo!()
+    }
+}
+
+impl Call for NativeFunction {
+    fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
+        todo!()
+    }
+}
+
+
+impl Display for LoxCallable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
+

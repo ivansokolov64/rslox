@@ -2,11 +2,12 @@ pub mod errors;
 pub mod expr;
 pub mod interpreter;
 pub mod lox;
-pub mod loxobject;
+pub mod object;
 pub mod parser;
 pub mod scanner;
 pub mod stmt;
 pub mod token;
+pub mod callables;
 
 use crate::errors::LoxError;
 use std::process::ExitCode;
