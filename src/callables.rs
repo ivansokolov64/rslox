@@ -2,6 +2,8 @@ use std::fmt::{Display, Formatter};
 use crate::errors::LoxError;
 use crate::interpreter::{EnvironmentStack};
 use crate::object::LoxObject;
+use crate::stmt::Stmt;
+use crate::token::Token;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LoxCallable {
@@ -9,16 +11,30 @@ pub enum LoxCallable {
     NativeFunction(NativeFunction),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct LoxFunction {
-
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Box<Stmt>
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl PartialEq for LoxFunction {
+    fn eq(&self, _other: &Self) -> bool {
+        false
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct NativeFunction {
     pub name: &'static str,
     pub arity: usize,
     pub function: fn(&mut EnvironmentStack, Vec<LoxObject>) -> Result<LoxObject, LoxError>
+}
+
+impl PartialEq for NativeFunction {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.eq(other.name) && self.arity.eq(&other.arity)
+    }
 }
 
 pub trait Call {
@@ -52,11 +68,20 @@ impl Call for LoxCallable {
 
 impl Call for LoxFunction {
     fn call(&self, envs: &mut EnvironmentStack, arguments: Vec<LoxObject>) -> Result<LoxObject, LoxError> {
-        todo!()
+        envs.push_scope();
+        for (i, param) in self.params.iter().enumerate() {
+            let arg = arguments.get(i).expect("Arity function not working correctly");
+            envs.define(&param.lexeme, arg.clone());
+        }
+
+
+        self.body.execute(envs)?;
+        Ok(LoxObject::Nil)
+
     }
 
     fn arity(&self) -> usize {
-        todo!()
+        self.params.len()
     }
 }
 
@@ -74,7 +99,25 @@ impl Call for NativeFunction {
 
 impl Display for LoxCallable {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            LoxCallable::LoxFunction(fun) => {
+                write!(f, "{fun}")
+            }
+            LoxCallable::NativeFunction(fun) => {
+                write!(f, "{fun}")
+            }
+        }
     }
 }
 
+impl Display for NativeFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<native fn {}>", self.name)
+    }
+}
+
+impl Display for LoxFunction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<fn {}>", self.name.lexeme)
+    }
+}

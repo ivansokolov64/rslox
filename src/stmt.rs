@@ -1,3 +1,4 @@
+use crate::callables::{LoxCallable, LoxFunction};
 use crate::errors::LoxError;
 use crate::expr::Expr;
 use crate::interpreter::EnvironmentStack;
@@ -18,6 +19,9 @@ pub enum Stmt {
         condition: Expr,
         then_branch: Box<Stmt>,
         else_branch: Box<Option<Stmt>>
+    },
+    Function {
+       fun: LoxFunction
     }
 }
 
@@ -70,6 +74,11 @@ impl Stmt {
                 while bool::from(condition.evaluate(envs)?) {
                     body.execute(envs)?;
                 }
+                Ok(())
+            }
+            Stmt::Function { fun } => {
+                let callable = LoxCallable::LoxFunction(fun.to_owned());
+                envs.define(&fun.name.lexeme, LoxObject::Callable(Box::new(callable)));
                 Ok(())
             }
         }

@@ -18,7 +18,7 @@ pub enum LoxObject {
     String(String),
     Boolean(bool),
     Nil,
-    Callable(LoxCallable)
+    Callable(Box<LoxCallable>)
 }
 
 impl Not for LoxObject {

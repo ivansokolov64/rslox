@@ -5,21 +5,21 @@ This is a personal project I have been working on in my spare time, following th
 
 ## Milestones
 
-|  Chapter Number   | Progress |
-|:-----------------:|:--------:|
-|         1         |  Done!   |
-|         2         |  Done!   |
-|         3         |  Done!   |
-|         4         |  Done!   |
-|         5         |  Done!   |
-|         6         |  Done!   |
-|         7         |  Done!   |
-|         8         |  Done!   |
-|         9         |  Done!   |
-|        10         |  TO-DO   |
-|        11         |  TO-DO   |
-|        12         |  TO-DO   |
-|        13         |  TO-DO   |
-|    Bytecode VM    |  TO-DO   |
+|  Chapter Number   |    Progress    |
+|:-----------------:|:--------------:|
+|         1         |     Done!      |
+|         2         |     Done!      |
+|         3         |     Done!      |
+|         4         |     Done!      |
+|         5         |     Done!      |
+|         6         |     Done!      |
+|         7         |     Done!      |
+|         8         |     Done!      |
+|         9         |     Done!      |
+|        10         | In progress... |
+|        11         |     TO-DO      |
+|        12         |     TO-DO      |
+|        13         |     TO-DO      |
+|    Bytecode VM    |     TO-DO      |
 
 

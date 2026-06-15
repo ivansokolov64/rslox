@@ -1,3 +1,4 @@
+use crate::callables::LoxFunction;
 use crate::errors::{LoxError, ParseError};
 use crate::expr::Expr;
 use crate::object::LoxObject;
@@ -49,11 +50,61 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt, ParseError> {
-        if self.match_tokens(&[TokenType::Var])? {
+        if self.match_tokens(&[TokenType::Fun])? {
+            self.function()
+        }
+        else if self.match_tokens(&[TokenType::Var])? {
             self.var_declaration()
         } else {
             self.statement()
         }
+    }
+
+    fn function(&mut self) -> Result<Stmt, ParseError> {
+        let name = match self.consume(TokenType::Identifier)? {
+            Some(token) => token.clone(),
+            None => return Err(ParseError::ExpectExpression),
+        };
+
+        self.consume(TokenType::LeftParen)?;
+
+        let mut params: Vec<Token> = vec![];
+
+        if !self.check(&TokenType::RightParen)? {
+            loop {
+                if params.len() >= 255 {
+                    return Err(ParseError::TooManyArguments)
+                }
+
+                let param = match self.consume(TokenType::Identifier)? {
+                    Some(token) => token.clone(),
+                    None => return Err(ParseError::ExpectExpression),
+                };
+
+                params.push(param);
+
+                if !self.match_tokens(&[TokenType::Comma])? {
+                    break;
+                }
+            }
+        }
+
+        self.consume(TokenType::RightParen)?;
+        self.consume(TokenType::LeftBrace)?;
+
+        let body = self.block()?;
+
+        let fun = LoxFunction {
+            name,
+            params,
+            body: Box::new(body),
+        };
+
+        Ok(Stmt::Function {
+            fun
+        })
+
+
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, ParseError> {
@@ -441,8 +492,9 @@ impl Parser {
                 if arguments.len() >= 255 {
                     return Err(ParseError::TooManyArguments)
                 }
+                let expr = self.assignment()?;
 
-                arguments.push(self.expression()?);
+                arguments.push(expr);
 
                 if !self.match_tokens(&[TokenType::Comma])? {
                     break;

@@ -186,7 +186,7 @@ impl Expr {
 
                 let arguments: Vec<LoxObject> = arguments.iter().map(|a| a.evaluate(envs))
                     .collect::<Result<Vec<_>, _>>()?;
-
+                
                 match callee {
                     LoxObject::Callable(lc) => lc.call(envs, arguments),
                     _ => Err(LoxError::RuntimeError(paren.clone(), RuntimeError::InvalidCallable))

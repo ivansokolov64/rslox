@@ -22,11 +22,11 @@ impl EnvironmentStack {
     pub fn new() -> Self {
         let mut global = Environment::new();
 
-        let clock = LoxObject::Callable(LoxCallable::NativeFunction(NativeFunction {
+        let clock = LoxObject::Callable(Box::new(LoxCallable::NativeFunction(NativeFunction {
             name: "clock",
             arity: 0,
             function: clock_native,
-        }));
+        })));
 
         global.define("clock".to_string(), clock);
 
