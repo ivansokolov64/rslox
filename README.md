@@ -15,7 +15,7 @@ This is a personal project I have been working on in my spare time, following th
 |         6         |  Done!   |
 |         7         |  Done!   |
 |         8         |  Done!   |
-|         9         |  TO-DO   |
+|         9         |  Done!   |
 |        10         |  TO-DO   |
 |        11         |  TO-DO   |
 |        12         |  TO-DO   |
