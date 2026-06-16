@@ -23,7 +23,7 @@ fn main() -> ExitCode {
                 LoxError::ParseError(_, _) => ExitCode::from(65),
                 LoxError::ScannerError(_, _) => ExitCode::from(65),
                 LoxError::RuntimeError(_, _) => ExitCode::from(70),
-                LoxError::IoError(_) => ExitCode::FAILURE,
+                _ => ExitCode::FAILURE,
             },
         },
         1 => match lox::run_prompt() {

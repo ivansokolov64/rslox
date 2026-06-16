@@ -132,6 +132,9 @@ impl Parser {
         else if self.match_tokens(&[TokenType::Print])? {
             self.print_statement()
         }
+        else if self.match_tokens(&[TokenType::Return])? {
+            self.return_statement()
+        }
         else if self.match_tokens(&[TokenType::While])? {
             self.while_statement()
         }
@@ -143,6 +146,22 @@ impl Parser {
         } else {
             self.expression_statement()
         }
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, ParseError> {
+        let keyword = self.previous()
+            .expect("Previous should exist after match tokens.")
+            .clone();
+
+        let mut value: Option<Expr> = None;
+
+        if !self.check(&TokenType::Semicolon)? {
+            value = Some(self.expression()?);
+        }
+
+        self.consume(TokenType::Semicolon)?;
+
+        Ok(Stmt::Return(keyword, value))
     }
 
     fn for_statement(&mut self) -> Result<Stmt, ParseError> {

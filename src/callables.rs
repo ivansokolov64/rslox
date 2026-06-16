@@ -75,8 +75,12 @@ impl Call for LoxFunction {
         }
 
 
-        self.body.execute(envs)?;
-        Ok(LoxObject::Nil)
+        let result = self.body.execute(envs);
+        envs.pop_scope();
+        match result? { 
+            None => Ok(LoxObject::Nil),
+            Some(val) => Ok(val)
+        }
 
     }
 

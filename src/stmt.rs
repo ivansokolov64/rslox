@@ -9,6 +9,7 @@ use crate::token::Token;
 pub enum Stmt {
     Expression(Expr),
     Print(Expr),
+    Return(Token, Option<Expr>),
     Var(Token, Option<Expr>),
     While {
         condition: Expr,
@@ -26,16 +27,16 @@ pub enum Stmt {
 }
 
 impl Stmt {
-    pub fn execute(&self, envs: &mut EnvironmentStack) -> Result<(), LoxError> {
+    pub fn execute(&self, envs: &mut EnvironmentStack) -> Result<Option<LoxObject>, LoxError> {
         match self {
             Stmt::Expression(expr) => {
                 expr.evaluate(envs)?;
-                Ok(())
+                Ok(None)
             }
             Stmt::Print(expr) => {
                 let value = expr.evaluate(envs)?;
                 println!("{}", value);
-                Ok(())
+                Ok(None)
             }
             Stmt::Var(token, expression) => {
                 let value: LoxObject = match expression {
@@ -43,43 +44,72 @@ impl Stmt {
                     Some(expr) => expr.evaluate(envs)?,
                 };
                 envs.define(&token.lexeme, value);
-                Ok(())
+                Ok(None)
             }
             Stmt::Block(stmts) => {
                 envs.push_scope();
 
+                let mut return_value: Option<LoxObject> = None;
                 for stmt in stmts {
-                    stmt.execute(envs)?;
+                    match stmt.execute(envs) {
+                        Ok(None) => {}
+                        Ok(Some(val)) => {
+                            return_value = Some(val);
+                            break;
+                        }
+                        Err(e) => {
+                            envs.pop_scope();
+                            return Err(e);
+                        }
+                    }
                 }
 
                 envs.pop_scope();
-                Ok(())
+                Ok(return_value)
             }
             Stmt::If { condition, then_branch, else_branch } => {
 
                 let cond = condition.evaluate(envs)?;
 
                 if cond.into() {
-                    then_branch.execute(envs)?;
+                    then_branch.execute(envs)
                 }
                 else if let Some(else_stmt) = else_branch.as_ref() {
-                    else_stmt.execute(envs)?;
+                    else_stmt.execute(envs)
+                }
+                else {
+                    Ok(None)
                 }
 
-                Ok(())
 
 
             }
             Stmt::While { condition, body } => {
                 while bool::from(condition.evaluate(envs)?) {
-                    body.execute(envs)?;
+                    if let Some(val) = body.execute(envs)? {
+                        return Ok(Some(val))
+                    }
                 }
-                Ok(())
+                Ok(None)
             }
             Stmt::Function { fun } => {
                 let callable = LoxCallable::LoxFunction(fun.to_owned());
                 envs.define(&fun.name.lexeme, LoxObject::Callable(Box::new(callable)));
-                Ok(())
+                Ok(None)
+            }
+            Stmt::Return(_, value) => {
+
+                let value = match value {
+                    None => {
+                        LoxObject::Nil
+                    }
+                    Some(expr) => {
+                        expr.evaluate(envs)?
+                    }
+                };
+
+                Ok(Some(value))
+
             }
         }
     }
